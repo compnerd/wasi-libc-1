@@ -11,6 +11,8 @@ include(CMakeDependentOption)
 
 option(ENABLE_THREADS "enable threads" OFF)
 
+find_package(Python COMPONENTS Interpreter REQUIRED)
+
 add_compile_options(--sysroot=${CMAKE_BINARY_DIR}/sysroot)
 
 # WebAssembly floating point match doesn't trap
@@ -1132,3 +1134,13 @@ foreach(stub m rt pthread crypt util xnet resolve dl)
   add_custom_target(${stub} ALL
     DEPENDS ${CMAKE_BINARY_DIR}/sysroot/lib/lib${stub}.a)
 endforeach()
+
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/sysroot/lib/libc.imports
+  COMMAND
+    ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/gen-imports.py
+    --nm ${CMAKE_NM}
+    --output ${CMAKE_BINARY_DIR}/sysroot/lib/libc.imports
+    $<TARGET_FILE:c> $<TARGET_OBJECTS:crt1>
+  DEPENDS c crt1)
+add_custom_target(libc.imports ALL
+  DEPENDS ${CMAKE_BINARY_DIR}/sysroot/lib/libc.imports)
